@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forest Fire Prediction - Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://source.unsplash.com/1920x1080/?forest,fire') no-repeat center center;
+            background-size: cover;
+            filter: blur(8px);
+            z-index: -1;
+        }
+
+        .background::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .auth-box {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .auth-header h1 {
+            color: #2c3e50;
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .auth-header .icon {
+            font-size: 2.5rem;
+            color: #dc3545;
+            margin-bottom: 15px;
+        }
+
+        .form-control {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 15px;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .form-control:focus {
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 0.2rem rgba(76, 175, 80, 0.25);
+        }
+
+        .btn-auth {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 500;
+            width: 100%;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-auth:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn-admin {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        }
+
+        .btn-admin:hover {
+            box-shadow: 0 5px 15px rgba(44, 62, 80, 0.4);
+        }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #6c757d;
+        }
+
+        .auth-footer a {
+            color: #4CAF50;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .form-floating {
+            margin-bottom: 15px;
+        }
+
+        .alert {
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        #registerForm, #adminLoginForm {
+            display: none;
+        }
+
+        .login-options {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .login-options button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: #f8f9fa;
+            color: #2c3e50;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .login-options button.active {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .login-options button:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="background"></div>
+    <div class="auth-container">
+        <div class="auth-box">
+            <div class="login-options">
+                <button id="userLoginBtn" class="active">
+                    <i class="fas fa-user me-2"></i>User Login
+                </button>
+                <button id="adminLoginBtn">
+                    <i class="fas fa-user-shield me-2"></i>Admin Login
+                </button>
+            </div>
+
+            <!-- User Login Form -->
+            <form id="loginForm">
+                <div class="auth-header">
+                    <div class="icon"><i class="fas fa-fire"></i></div>
+                    <h1>Welcome Back</h1>
+                    <p>Login to access Forest Fire Prediction System</p>
+                </div>
+
+                <div class="alert alert-danger" id="loginError" style="display: none;"></div>
+
+                <div class="form-floating">
+                    <input type="email" class="form-control" id="loginEmail" placeholder="name@example.com" required>
+                    <label for="loginEmail">Email address</label>
+                </div>
+                <div class="form-floating">
+                    <input type="password" class="form-control" id="loginPassword" placeholder="Password" required>
+                    <label for="loginPassword">Password</label>
+                </div>
+
+                <button type="submit" class="btn btn-auth">
+                    <i class="fas fa-sign-in-alt me-2"></i> Login
+                </button>
+
+                <div class="auth-footer">
+                    Don't have an account? <a href="#" id="showRegister">Register here</a>
+                </div>
+            </form>
+
+            <!-- Admin Login Form -->
+            <form id="adminLoginForm">
+                <div class="auth-header">
+                    <div class="icon"><i class="fas fa-user-shield"></i></div>
+                    <h1>Admin Login</h1>
+                    <p>Access administrative features</p>
+                </div>
+
+                <div class="alert alert-danger" id="adminLoginError" style="display: none;"></div>
+
+                <div class="form-floating">
+                    <input type="email" class="form-control" id="adminEmail" placeholder="name@example.com" required>
+                    <label for="adminEmail">Admin Email</label>
+                </div>
+                <div class="form-floating">
+                    <input type="password" class="form-control" id="adminPassword" placeholder="Password" required>
+                    <label for="adminPassword">Admin Password</label>
+                </div>
+
+                <button type="submit" class="btn btn-auth btn-admin">
+                    <i class="fas fa-sign-in-alt me-2"></i> Login as Admin
+                </button>
+
+                <div class="auth-footer">
+                    <a href="#" id="backToUserLogin">Back to User Login</a>
+                </div>
+            </form>
+
+            <!-- Register Form -->
+            <form id="registerForm">
+                <div class="auth-header">
+                    <div class="icon"><i class="fas fa-fire"></i></div>
+                    <h1>Create Account</h1>
+                    <p>Register to access Forest Fire Prediction System</p>
+                </div>
+
+                <div class="alert alert-danger" id="registerError" style="display: none;"></div>
+
+                <div class="form-floating">
+                    <input type="text" class="form-control" id="registerName" placeholder="Full Name" required>
+                    <label for="registerName">Full Name</label>
+                </div>
+                <div class="form-floating">
+                    <input type="email" class="form-control" id="registerEmail" placeholder="name@example.com" required>
+                    <label for="registerEmail">Email address</label>
+                </div>
+                <div class="form-floating">
+                    <input type="password" class="form-control" id="registerPassword" placeholder="Password" required>
+                    <label for="registerPassword">Password</label>
+                </div>
+                <div class="form-floating">
+                    <input type="password" class="form-control" id="confirmPassword" placeholder="Confirm Password" required>
+                    <label for="confirmPassword">Confirm Password</label>
+                </div>
+
+                <button type="submit" class="btn btn-auth">
+                    <i class="fas fa-user-plus me-2"></i> Register
+                </button>
+
+                <div class="auth-footer">
+                    Already have an account? <a href="#" id="showLogin">Login here</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Toggle between login options
+            $('#userLoginBtn').click(function() {
+                $(this).addClass('active');
+                $('#adminLoginBtn').removeClass('active');
+                $('#loginForm').show();
+                $('#adminLoginForm, #registerForm').hide();
+            });
+
+            $('#adminLoginBtn').click(function() {
+                $(this).addClass('active');
+                $('#userLoginBtn').removeClass('active');
+                $('#adminLoginForm').show();
+                $('#loginForm, #registerForm').hide();
+            });
+
+            // Toggle between login and register forms
+            $('#showRegister').click(function(e) {
+                e.preventDefault();
+                $('#loginForm, #adminLoginForm').hide();
+                $('#registerForm').fadeIn();
+            });
+
+            $('#showLogin, #backToUserLogin').click(function(e) {
+                e.preventDefault();
+                $('#registerForm, #adminLoginForm').hide();
+                $('#loginForm').fadeIn();
+                $('#userLoginBtn').addClass('active');
+                $('#adminLoginBtn').removeClass('active');
+            });
+
+            // Handle user login form submission
+            $('#loginForm').submit(function(e) {
+                e.preventDefault();
+                const email = $('#loginEmail').val();
+                const password = $('#loginPassword').val();
+
+                $.ajax({
+                    url: '/login',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ email, password, is_admin: false }),
+                    success: function(response) {
+                        if (response.success) {
+                            window.location.href = '/';
+                        } else {
+                            $('#loginError').text(response.error).show();
+                        }
+                    },
+                    error: function() {
+                        $('#loginError').text('An error occurred. Please try again.').show();
+                    }
+                });
+            });
+
+            // Handle admin login form submission
+            $('#adminLoginForm').submit(function(e) {
+                e.preventDefault();
+                const email = $('#adminEmail').val();
+                const password = $('#adminPassword').val();
+
+                $.ajax({
+                    url: '/login',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ email, password, is_admin: true }),
+                    success: function(response) {
+                        if (response.success) {
+                            window.location.href = '/admin';
+                        } else {
+                            $('#adminLoginError').text(response.error).show();
+                        }
+                    },
+                    error: function() {
+                        $('#adminLoginError').text('An error occurred. Please try again.').show();
+                    }
+                });
+            });
+
+            // Handle register form submission
+            $('#registerForm').submit(function(e) {
+                e.preventDefault();
+                const name = $('#registerName').val();
+                const email = $('#registerEmail').val();
+                const password = $('#registerPassword').val();
+                const confirmPassword = $('#confirmPassword').val();
+
+                if (password !== confirmPassword) {
+                    $('#registerError').text('Passwords do not match').show();
+                    return;
+                }
+
+                $.ajax({
+                    url: '/register',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ name, email, password }),
+                    success: function(response) {
+                        if (response.success) {
+                            $('#registerForm').hide();
+                            $('#loginForm').fadeIn();
+                            $('#loginEmail').val(email);
+                            alert('Registration successful! Please log in.');
+                        } else {
+                            $('#registerError').text(response.error).show();
+                        }
+                    },
+                    error: function() {
+                        $('#registerError').text('An error occurred. Please try again.').show();
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html> 
