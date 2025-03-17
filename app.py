@@ -1,47 +1,33 @@
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session
-from flask_sqlalchemy import SQLAlchemy
+from flask_pymongo import PyMongo
 from werkzeug.security import generate_password_hash, check_password_hash
 import joblib
 import os
 import numpy as np
 from datetime import datetime
 from functools import wraps
+from bson import ObjectId
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-here'  # Change this to a secure secret key
+app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-here')
 
-# For Vercel deployment, use PostgreSQL
-DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///users.db')
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+# MongoDB configuration
+app.config['MONGO_URI'] = os.getenv('MONGO_URI', 'mongodb://localhost:27017/forestfire')
+mongo = PyMongo(app)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-db = SQLAlchemy(app)
-
-# User model
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(200), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    is_admin = db.Column(db.Boolean, default=False)
-
-# Create database tables
+# Create indexes for email (unique)
 with app.app_context():
-    db.create_all()
+    mongo.db.users.create_index('email', unique=True)
     # Create admin user if no users exist
-    if not User.query.first():
-        admin_user = User(
-            name='Admin User',
-            email='rohitjadhav45074507@gmail.com',
-            password=generate_password_hash('zxcvbnm'),
-            is_admin=True
-        )
-        db.session.add(admin_user)
-        db.session.commit()
+    if not mongo.db.users.find_one():
+        admin_user = {
+            'name': 'Admin User',
+            'email': 'rohitjadhav45074507@gmail.com',
+            'password': generate_password_hash('zxcvbnm'),
+            'is_admin': True,
+            'created_at': datetime.utcnow()
+        }
+        mongo.db.users.insert_one(admin_user)
         print("Admin user created successfully!")
 
 # Login required decorator
@@ -59,8 +45,8 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
             return redirect(url_for('login'))
-        user = User.query.get(session['user_id'])
-        if not user or not user.is_admin:
+        user = mongo.db.users.find_one({'_id': ObjectId(session['user_id'])})
+        if not user or not user.get('is_admin'):
             return jsonify({'error': 'Admin access required'}), 403
         return f(*args, **kwargs)
     return decorated_function
@@ -84,16 +70,16 @@ def login():
         if not email or not password:
             return jsonify({'success': False, 'error': 'Email and password are required'})
         
-        user = User.query.filter_by(email=email).first()
+        user = mongo.db.users.find_one({'email': email})
         
-        if user and check_password_hash(user.password, password):
+        if user and check_password_hash(user['password'], password):
             # For admin login, check if user is actually an admin
-            if is_admin and not user.is_admin:
+            if is_admin and not user.get('is_admin'):
                 return jsonify({'success': False, 'error': 'This account does not have admin privileges'})
             
-            session['user_id'] = user.id
-            session['user_name'] = user.name
-            session['is_admin'] = user.is_admin
+            session['user_id'] = str(user['_id'])
+            session['user_name'] = user['name']
+            session['is_admin'] = user.get('is_admin', False)
             return jsonify({'success': True})
         
         return jsonify({'success': False, 'error': 'Invalid email or password'})
@@ -103,33 +89,41 @@ def login():
 @app.route('/admin')
 @admin_required
 def admin_dashboard():
-    users = User.query.all()
+    users = list(mongo.db.users.find())
+    # Convert ObjectId to string for JSON serialization
+    for user in users:
+        user['_id'] = str(user['_id'])
     return render_template('admin.html', users=users)
 
-@app.route('/admin/delete_user/<int:user_id>', methods=['POST'])
+@app.route('/admin/delete_user/<user_id>', methods=['POST'])
 @admin_required
 def delete_user(user_id):
-    user = User.query.get_or_404(user_id)
-    if user.is_admin:
+    user = mongo.db.users.find_one({'_id': ObjectId(user_id)})
+    if not user:
+        return jsonify({'success': False, 'error': 'User not found'})
+    if user.get('is_admin'):
         return jsonify({'success': False, 'error': 'Cannot delete admin user'})
     try:
-        db.session.delete(user)
-        db.session.commit()
+        mongo.db.users.delete_one({'_id': ObjectId(user_id)})
         return jsonify({'success': True})
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)})
 
-@app.route('/admin/toggle_admin/<int:user_id>', methods=['POST'])
+@app.route('/admin/toggle_admin/<user_id>', methods=['POST'])
 @admin_required
 def toggle_admin(user_id):
-    user = User.query.get_or_404(user_id)
     try:
-        user.is_admin = not user.is_admin
-        db.session.commit()
-        return jsonify({'success': True, 'is_admin': user.is_admin})
+        user = mongo.db.users.find_one({'_id': ObjectId(user_id)})
+        if not user:
+            return jsonify({'success': False, 'error': 'User not found'})
+        
+        new_admin_status = not user.get('is_admin', False)
+        mongo.db.users.update_one(
+            {'_id': ObjectId(user_id)},
+            {'$set': {'is_admin': new_admin_status}}
+        )
+        return jsonify({'success': True, 'is_admin': new_admin_status})
     except Exception as e:
-        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/register', methods=['POST'])
@@ -150,23 +144,22 @@ def register():
             return jsonify({'success': False, 'error': 'Password must be at least 6 characters long'})
         
         # Check if user already exists
-        if User.query.filter_by(email=email).first():
+        if mongo.db.users.find_one({'email': email}):
             return jsonify({'success': False, 'error': 'Email already registered'})
         
         # Create new user
-        user = User(
-            name=name,
-            email=email,
-            password=generate_password_hash(password),
-            is_admin=not User.query.first()  # First user becomes admin
-        )
+        user = {
+            'name': name,
+            'email': email,
+            'password': generate_password_hash(password),
+            'is_admin': not mongo.db.users.find_one(),  # First user becomes admin
+            'created_at': datetime.utcnow()
+        }
         
         try:
-            db.session.add(user)
-            db.session.commit()
+            mongo.db.users.insert_one(user)
             return jsonify({'success': True})
         except Exception as e:
-            db.session.rollback()
             return jsonify({'success': False, 'error': 'Registration failed: Database error'})
             
     except Exception as e:
